@@ -7,6 +7,7 @@ from typing import List
 from transformers import (DPRContextEncoder, DPRContextEncoderTokenizer,
                           DPRQuestionEncoder, DPRQuestionEncoderTokenizer)
 from .document_chunker import DocumentChunker
+from .dpr_document import DPRDocument
 
 
 class DPRIndex(DocumentChunker):
@@ -27,20 +28,30 @@ class DPRIndex(DocumentChunker):
         'facebook/dpr-question_encoder-single-nq-base', return_dict=True)
 
 
-    def __init__(self, documents: List[str]):
+    def __init__(self, documents: List[DPRDocument]):
         super(DocumentChunker).__init__()
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         if self.device == 'cuda':
             self.reader_model = self.reader_model.cuda()
         self.faiss_index = faiss.IndexFlatL2(self.D)
+        self._set_doc_chunk_index(documents)
+
+
+    def _set_doc_chunk_index(self, documents):
+        '''
+        Initializes the data structure to keep track of which chunks
+        correspond to which documents.
+        '''
         self.documents = documents
+        self.doc_bodies = [doc.body for doc in self.documents]
         self.chunks = []
         self.chunk_index = {}  # {chunk: document}
         self.inverse_chunk_index = {}  # {document: [chunks]}
         chunk_counter = 0
-        for doc_counter, doc in tqdm(enumerate(documents),total=len(documents)):
+        for doc_counter, doc_body in tqdm(enumerate(self.doc_bodies),
+                                          total=len(self.doc_bodies)):
             self.inverse_chunk_index[doc_counter] = []
-            chunked_docs = self.chunk_document(doc)
+            chunked_docs = self.chunk_document(doc_body)
             self.chunks.extend(chunked_docs)
             for chunked_doc in chunked_docs:
                 chunk_embedding = self.embed_context(chunked_doc)
