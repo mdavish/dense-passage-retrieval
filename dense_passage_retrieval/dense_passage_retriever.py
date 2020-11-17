@@ -1,21 +1,11 @@
 from .dpr_reader import DPRReader
 from .dpr_index import DPRIndex
-from .elastic_index import ElasticIndex
 
 
-class DensePassageRetriever(DPRIndex, DPRReader, ElasticIndex):
+class DensePassageRetriever(DPRIndex, DPRReader):
 
     def __init__(self, documents):
         DPRIndex.__init__(self, documents)
-        ElasticIndex.__init__(self, documents)
-
-    def search_dense_index(self, query, ):
-        '''Wrapper for the ElasticIndex.search_index() method.'''
-        return DPRIndex.search_index(self, query, k)
-
-    def search_sparse_index(self, query):
-        '''Wrapper for the ElasticIndex.search_index() method.'''
-        return ElasticIndex.search_index(self, query)
 
     def _merge_results(self, sparse_result, dense_result):
         '''Merges the results of sparse and dense retrieval.'''
@@ -62,6 +52,10 @@ class DensePassageRetriever(DPRIndex, DPRReader, ElasticIndex):
     def search_dual_index(self, query: str):
         '''Search both the sparse and dense indices and merge the results.'''
         sparse_result = self.search_sparse_index(query)
-        dense_result = self.search_index(query)
+        dense_result = self.search_dense_index(query)
         merged_results = self._merge_results(sparse_result, dense_result)
         return merged_results
+
+    def read_dual_results(self, dual_results: dict):
+        '''Augments the results from search_dual_index() with the DPR reader.'''
+        pass

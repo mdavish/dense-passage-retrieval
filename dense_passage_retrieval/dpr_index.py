@@ -4,6 +4,7 @@ import torch
 import faiss
 from tqdm import tqdm
 from typing import List
+from elasticsearch import Elasticsearch
 from transformers import (DPRContextEncoder, DPRContextEncoderTokenizer,
                           DPRQuestionEncoder, DPRQuestionEncoderTokenizer)
 from .document_chunker import DocumentChunker
@@ -17,6 +18,7 @@ class DPRIndex(DocumentChunker):
     DPR model and FAISS for nearest neighbor.
     '''
 
+    INDEX_NAME = 'dense-passage-retrieval'
     D = 768
     context_tokenizer = DPRContextEncoderTokenizer.from_pretrained(
         'facebook/dpr-ctx_encoder-single-nq-base')
@@ -34,7 +36,16 @@ class DPRIndex(DocumentChunker):
         if self.device == 'cuda':
             self.reader_model = self.reader_model.cuda()
         self.faiss_index = faiss.IndexFlatL2(self.D)
+        self._setup_elastic_index()
         self._set_doc_chunk_index(documents)
+
+    def _setup_elastic_index(self):
+        '''Sets up the Elastic Index. Deletes old ones if needed.'''
+        self.es = Elasticsearch()
+        if self.es.indices.exists(self.INDEX_NAME):
+            logging.warning(f'Deleting old index for {self.INDEX_NAME}.')
+            self.es.indices.delete(self.INDEX_NAME)
+        self.es.indices.create(index=self.INDEX_NAME)
 
 
     def _set_doc_chunk_index(self, documents):
@@ -56,6 +67,8 @@ class DPRIndex(DocumentChunker):
             for chunked_doc in chunked_docs:
                 chunk_embedding = self.embed_context(chunked_doc)
                 self.faiss_index.add(chunk_embedding)
+                self.es.create(self.INDEX_NAME, id=chunk_counter,
+                               body={'chunk': chunked_doc})
                 self.chunk_index[chunk_counter] = doc_counter
                 self.inverse_chunk_index[doc_counter].append(chunk_counter)
                 chunk_counter += 1
@@ -80,7 +93,7 @@ class DPRIndex(DocumentChunker):
         return embeddings
 
 
-    def search_index(self, question: str, k: int = 5):
+    def search_dense_index(self, question: str, k: int = 5):
         '''
         Search the vector index by encoding the question and then performing
         nearest neighbor on the FAISS index of context vectors.
@@ -111,3 +124,16 @@ class DPRIndex(DocumentChunker):
             }
             structured_response.append(blob)
         return structured_response
+
+    def search_sparse_index(self, query):
+        body = {
+            'size': 10,
+            'query': {
+                'match': {
+                    'document': query
+                }
+            }
+        }
+        results = self.es.search(index=self.INDEX_NAME, body=body)
+        hits = results['hits']['hits']
+        return hits
