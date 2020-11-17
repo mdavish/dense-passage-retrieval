@@ -26,3 +26,13 @@ documents = [
 dpr = DensePassageRetriever(documents)
 dpr.search_dual_index('Who plays for the LA basketball team?')
 ```
+
+In order to use this, you will need an Elastic Search cluster running.
+You can find the instructions for this
+[**here**](https://www.elastic.co/guide/en/elasticsearch/reference/current/targz.html).
+
+Once installed, just navigate to your version and start it like this:
+```
+cd ~/elasticsearch-7.8.1/
+./bin/elasticsearch
+```
