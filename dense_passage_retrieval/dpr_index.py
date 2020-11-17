@@ -85,6 +85,7 @@ class DPRIndex(DocumentChunker):
         question_embedding = self.embed_question(question)
         dists, chunk_ids = self.faiss_index.search(question_embedding, k=k)
         dists, chunk_ids = list(dists[0]), list(chunk_ids[0])
+        dists = list(map(float, dists)) #For Flask
         structured_response = []
         for dist, chunk_id in zip(dists, chunk_ids):
             chunk = self.chunks[chunk_id]
@@ -94,7 +95,7 @@ class DPRIndex(DocumentChunker):
                 'document': document,
                 'document_id': document_id,
                 'chunk': chunk,
-                'chunk_id': chunk_id,
+                'chunk_id': int(chunk_id), #For Flask
                 'faiss_dist': dist
             }
             structured_response.append(blob)
