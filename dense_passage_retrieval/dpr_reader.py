@@ -86,7 +86,6 @@ class DPRReader(DocumentChunker):
                 'document': document
             }
             responses.append(response)
-        response = responses.sort(key=lambda x: -x['relevance'])
         return responses
 
     def read_chunked_document(self, question: str, document: str, title: str):
