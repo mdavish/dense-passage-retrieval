@@ -1,3 +1,5 @@
+import json
+
 class DPRDocument:
 
     '''
@@ -11,3 +13,10 @@ class DPRDocument:
     def __init__(self, title: str, body:str):
         self.title = title
         self.body = body
+
+    def to_dict(self):
+        return {'title': self.title, 'body': self.body}
+
+    def __repr__(self):
+        pretty = json.dumps(self.to_dict())
+        return pretty

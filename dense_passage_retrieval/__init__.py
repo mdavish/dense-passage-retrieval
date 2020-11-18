@@ -1,4 +1,5 @@
 import logging
+import re
 
 
 def set_global_logging_level(level=logging.ERROR, prefices=[""]):
