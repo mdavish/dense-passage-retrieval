@@ -36,9 +36,9 @@ class DPRIndex(DocumentChunker):
         self.device = 'cuda' if torch.cuda.is_available() else 'cpu'
         if self.device == 'cuda':
             self.reader_model = self.reader_model.cuda()
-        self.faiss_index = faiss.IndexFlatL2(self.D)
+        self.faiss_index = faiss.IndexFlatIP(self.D)
         self._setup_elastic_index()
-        self._set_doc_chunk_index(documents)
+        self._build_index(documents)
 
     def _setup_elastic_index(self):
         '''Sets up the Elastic Index. Deletes old ones if needed.'''
@@ -48,7 +48,7 @@ class DPRIndex(DocumentChunker):
             self.es.indices.delete(self.INDEX_NAME)
         self.es.indices.create(index=self.INDEX_NAME)
 
-    def _set_doc_chunk_index(self, documents):
+    def _build_index(self, documents):
         '''
         Initializes the data structure to keep track of which chunks
         correspond to which documents.
@@ -160,7 +160,7 @@ class DPRIndex(DocumentChunker):
                 'chunk': chunk,
                 'document_id': document_id,
                 'document': doc_profile,
-                'retrieval_scores': scores
+                'scores': scores
             }
             results.append(result)
         return results
