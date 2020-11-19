@@ -15,6 +15,7 @@ class DensePassageRetriever(DPRIndex, DPRReader):
         for dual_result, reader_result in zip(dual_results, reader_results):
             dual_result['answer'] = reader_result['answer']
             dual_result['scores']['reader_relevance'] = reader_result['relevance']
+            dual_result['scores']['answer_score'] = reader_result['answer_score']
         dual_results.sort(key=lambda x: -x['scores']['reader_relevance'])
         return dual_results
 

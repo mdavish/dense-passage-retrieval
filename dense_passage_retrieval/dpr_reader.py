@@ -1,5 +1,6 @@
 import torch
 from typing import List
+from tqdm import tqdm
 from transformers import DPRReader, DPRReaderTokenizer
 from .document_chunker import DocumentChunker
 
@@ -66,7 +67,7 @@ class DPRReader(DocumentChunker):
         end_logits = outputs.end_logits
         relevance_logits = outputs.relevance_logits
         responses = []
-        for i in range(len(documents)):
+        for i in tqdm(range(len(documents))):
             title = titles[i]
             document = documents[i]
             start = start_logits[i]
@@ -76,12 +77,14 @@ class DPRReader(DocumentChunker):
             input_tokens = self.reader_tokenizer.convert_ids_to_tokens(inp_ids)
             answer_start = int(start.argmax())
             answer_end = int(end.argmax())
+            answer_score = float(start.max())
             relevance = float(relevance.max())
             answer_tokens = input_tokens[answer_start : answer_end + 1]
             answer_str = self._reconstruct_tokens(answer_tokens)
             response = {
                 'answer': answer_str,
                 'relevance': relevance,
+                'answer_score': answer_score,
                 'title': title,
                 'document': document
             }
