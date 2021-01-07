@@ -56,7 +56,7 @@ class DocumentChunker:
             new_chunks = []
             for chunk, length in zip(chunks, chunk_lengths):
                 if length > self.MAX_TOKENS_DOCUMENT:
-                    sub_chunks = chunk.split(split_char)
+                    sub_chunks = re.split(split_char, chunk)
                     sub_chunks = [chunk for chunk in sub_chunks if chunk]
                     new_chunks.extend(sub_chunks)
                 else:
